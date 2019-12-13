@@ -40,7 +40,7 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   //tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
-tid = thread_create (strtok_r(file_name," ",&save_ptr), PRI_DEFAULT,  start_process, fn_copy);//add
+tid = thread_create (strtok_r((char*)file_name," ",&save_ptr), PRI_DEFAULT,  start_process, fn_copy);//add
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
   return tid;
@@ -63,6 +63,8 @@ char *token;
 char *save_ptr;
 argc=0;
 
+printf("\n\n\n%s\n\n\n", file_name);
+
 for(token=strtok_r(file_name," ",&save_ptr);token!=NULL;token=strtok_r(NULL,"",&save_ptr)){
 	argv[argc]=malloc(strlen(token)+1);
 	strlcpy(argv[argc++],token,strlen(token)+1);
@@ -80,6 +82,13 @@ for(token=strtok_r(file_name," ",&save_ptr);token!=NULL;token=strtok_r(NULL,"",&
   //success = load (file_name, &if_.eip, &if_.esp);
 success=load(argv[0],&if_.eip,&if_.esp);//add
 
+//add->
+if(success){
+	push(argv,argc,&if_.esp);
+	hex_dump(if_.esp,if_.esp,PHYS_BASE -if_.esp,true);
+}
+//add<-
+
   /* If load failed, quit. */
   palloc_free_page (file_name);
   if (!success) 
@@ -87,12 +96,7 @@ success=load(argv[0],&if_.eip,&if_.esp);//add
 
 
 
-//add->
-else{
-	push(argv,argc,&if_.esp);
-	hex_dump(if_.esp,if_.esp,PHYS_BASE -if_.esp,true);
-}
-//add<-
+
 
 
 
@@ -164,12 +168,25 @@ void push(char **argv,int argc,uint8_t **esp){
 
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
-int
-process_wait (tid_t child_tid UNUSED) 
+int process_wait (tid_t child_tid)
+{
+  long i;
+  long sum=0;
+  for (i = 0; i < 100000000000; i++){
+	sum+=1;
+}
+  return -1;
+}
+/*
+int process_wait (tid_t child_tid UNUSED) 
 {
 while(1);  
   return -1;
 }
+*/
+
+
+
 
 /* Free the current process's resources. */
 void
@@ -438,7 +455,8 @@ validate_segment (const struct Elf32_Phdr *phdr, struct file *file)
      it then user code that passed a null pointer to system calls
      could quite likely panic the kernel by way of null pointer
      assertions in memcpy(), etc. */
-  if (phdr->p_vaddr < PGSIZE)
+  //if (phdr->p_vaddr < PGSIZE)
+if(phdr->p_offset < PGSIZE) //added
     return false;
 
   /* It's okay. */
